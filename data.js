@@ -9,6 +9,8 @@ module.exports.COLOURED_TRAIN_NUM = 12;
 module.exports.TRAIN_LOCOMOTIVE = "locomotive";
 module.exports.LOCOMOTIVE_NUM = 14;
 
+module.exports.TICKET_DRAW_SIZE = 3;
+
 module.exports.TICKET_LIST = [
     {
         points: 6,
