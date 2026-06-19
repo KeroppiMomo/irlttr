@@ -1,0 +1,54 @@
+.draw-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.draw-warning {
+    font-size: 13px;
+    color: #e53e3e;
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+}
+
+/* Styled checkbox */
+.draw-table td { vertical-align: middle; }
+
+.keep-checkbox {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    cursor: pointer;
+    position: relative;
+    display: block;
+    margin: 0 auto;
+    transition: background 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+.keep-checkbox:checked {
+    background: var(--accent, #4a5568);
+    border-color: var(--accent, #4a5568);
+}
+.keep-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+}
+.keep-checkbox:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #3182ce) 25%, transparent); }
+
+/* Dim rows that are unchecked */
+.draw-table tr.dimmed td { opacity: 0.4; }
+.draw-table tr.dimmed td:first-child { opacity: 1; }

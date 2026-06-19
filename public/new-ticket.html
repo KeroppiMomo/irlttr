@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>New Tickets</title>
+        <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" href="new-ticket.css" />
+    </head>
+    <body>
+
+        <div class="container">
+
+            <!-- Back -->
+            <div>
+                <a class="btn-back" href="ticket.html">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    Back
+                </a>
+            </div>
+
+            <!-- Draw table -->
+            <div class="card">
+                <div class="section-label">Choose tickets to keep</div>
+                <p class="draw-hint">You must keep at least 1.</p>
+                <table class="ticket-table draw-table">
+                    <thead>
+                        <tr>
+                            <th style="width:52px;">Keep?</th>
+                            <th style="width:52px;">Points</th>
+                            <th>From</th>
+                            <th style="width:12px;"></th>
+                            <th>To</th>
+                        </tr>
+                    </thead>
+                    <tbody id="drawBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Confirm -->
+            <button class="btn-primary" id="confirmBtn" onclick="confirmTickets()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Confirm selection
+            </button>
+
+            <p class="draw-warning" id="keepWarning" style="display:none;">Keep at least one ticket before confirming.</p>
+
+        </div>
+
+        <script src="new-ticket.js"></script>
+    </body>
+</html>

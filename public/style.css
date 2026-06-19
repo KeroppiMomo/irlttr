@@ -100,7 +100,6 @@ select {
     color: var(--text);
     outline: none;
 }
-
 .team-name-edit:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #3182ce) 20%, transparent); }
 
 .btn-change-name {
@@ -124,9 +123,7 @@ select {
     border-left: 4px solid var(--accent, var(--border));
     padding: 0.9rem 1.25rem;
 }
-
 .timer-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
-
 .timer-display {
     font-size: 36px;
     font-weight: 700;
@@ -263,4 +260,122 @@ select {
     padding: 0.5rem 0.75rem;
     margin-top: 0.5rem;
     display: none;
+}
+
+/* ── Back button ── */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+    box-shadow: var(--shadow);
+}
+.btn-back:hover { border-color: var(--accent, #718096); color: var(--accent, var(--text)); }
+
+/* ── Primary action button ── */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--accent, #4a5568);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.15s;
+    box-shadow: var(--shadow);
+}
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:active { opacity: 0.75; transform: scale(0.99); }
+
+/* ── Tickets table ── */
+.ticket-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.ticket-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.ticket-table td {
+    padding: 0.65rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text);
+}
+
+.ticket-table tr:last-child td { border-bottom: none; }
+
+.ticket-table tr.completed td { color: var(--text-muted); }
+
+/* Completed / not-completed icons */
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+.status-icon:hover { opacity: 0.75; }
+.status-icon.done   { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+.status-icon.todo   { background: var(--neutral-bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+.completion-time {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.points-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--accent-bg, var(--neutral-bg));
+    color: var(--accent, var(--text-muted));
+    border: 1px solid var(--accent-border, var(--border));
+}
+
+.route-arrow {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.ticket-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 1.5rem 0;
+    font-size: 14px;
 }

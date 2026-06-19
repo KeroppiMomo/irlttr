@@ -1,0 +1,110 @@
+/* ── Challenge list ── */
+.challenge-list { display: flex; flex-direction: column; }
+
+.challenge-item {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.challenge-item:last-child { border-bottom: none; }
+
+.challenge-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+}
+
+.challenge-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.challenge-reward {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    background: var(--accent-bg, #f0f0f0);
+    color: var(--accent, var(--text-muted));
+    border: 1px solid var(--accent-border, var(--border));
+}
+
+.challenge-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+/* ── Active challenge card ── */
+.active-card {
+    border: 1.5px solid var(--accent, var(--border));
+    background: var(--accent-bg, var(--surface));
+}
+
+.active-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent, var(--text-muted));
+    margin-bottom: 0.85rem;
+}
+
+/* Animated pulse dot */
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent, #4a5568);
+    display: inline-block;
+    animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Active challenge uses same item style but no divider */
+.active-card .challenge-item {
+    border-bottom: none;
+    padding: 0;
+}
+
+/* ── Action buttons ── */
+.action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.btn-complete, .btn-veto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+}
+.btn-complete:hover, .btn-veto:hover { opacity: 0.85; }
+.btn-complete:active, .btn-veto:active { opacity: 0.7; transform: scale(0.98); }
+
+.btn-complete {
+    background: #22c55e;
+    color: #fff;
+}
+.btn-veto {
+    background: var(--neutral-bg);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
