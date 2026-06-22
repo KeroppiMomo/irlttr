@@ -20,13 +20,57 @@ const TICKET_POOL = [
     { points: 4,  from: 'Silk Road Inn',    to: 'Forge District'     },
 ];
 
-// Draw 3 unique tickets at random
-function drawTickets(pool, count) {
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, count);
+// Draw tickets by asking the API for choices; fall back to local pool
+async function drawTickets(pool, count) {
+    try {
+        // Determine numeric team id (stored as string in localStorage)
+        const rawTeam = localStorage.getItem('my_team');
+        const teamName = rawTeam || '';
+        let teamId = null;
+        if (rawTeam) {
+            if (/^\d+$/.test(rawTeam)) {
+                teamId = parseInt(rawTeam, 10);
+            } else {
+                // accept variants like "Team Red", "red", "Red"
+                const key = String(rawTeam).toLowerCase().trim().replace(/^team\s+/, '');
+                const map = { red: 0, blue: 1, green: 2, yellow: 3 };
+                if (Object.prototype.hasOwnProperty.call(map, key)) teamId = map[key];
+            }
+        }
+
+        // If no valid team id, skip server call and fall back
+        if (teamId === null || Number.isNaN(teamId)) throw new Error('no-valid-team');
+
+        // Get full ticket list from server
+        const listResp = await fetch('/api/ticket-list');
+        if (!listResp.ok) throw new Error('ticket-list fetch failed');
+        const ticketList = await listResp.json();
+
+        // Request server to prepare a draw for this team
+        const newResp = await fetch('/api/ticket-new', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ team: teamId }),
+        });
+
+        if (!newResp.ok) throw new Error('ticket-new fetch failed');
+        const choosing = await newResp.json();
+
+        // `choosing` is an array of ticket indices — map to full ticket objects
+        if (Array.isArray(choosing) && choosing.length > 0) {
+            return choosing.slice(0, count).map(i => ticketList[i]);
+        }
+    } catch (e) {
+        // silent fallthrough to local draw on any error
+        console.warn('new-ticket: drawTickets error', e && e.message ? e.message : e);
+    }
+
+    // // Fallback: local random draw
+    // const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    // return shuffled.slice(0, count);
 }
 
-const drawn = drawTickets(TICKET_POOL, 3);
+let drawn = [];
 
 // Render the draw table
 function renderDraw() {
@@ -117,4 +161,8 @@ function confirmTickets() {
     window.location.href = 'ticket.html';
 }
 
-renderDraw();
+// Initialize draw by fetching from API (falls back to local pool)
+(async function initDraw() {
+    drawn = await drawTickets(TICKET_POOL, 3);
+    renderDraw();
+})();
