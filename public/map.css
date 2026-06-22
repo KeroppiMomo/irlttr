@@ -1,0 +1,197 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@font-face {
+    font-family: "Bondoni MT"; /* set name */
+    src: url(font/BOD_R_0.TTF); /* url of the font */
+}
+
+#layer1 text {
+    font-family: "Bondoni MT", serif !important;
+}
+
+:root {
+    --red:    #e53e3e;
+    --red-bg: #fff5f5;
+    --red-border: #feb2b2;
+    --blue:    #3182ce;
+    --blue-bg: #ebf8ff;
+    --blue-border: #90cdf4;
+    --yellow:  #d69e2e;
+    --yellow-bg: #fffff0;
+    --yellow-border: #faf089;
+    --green:   #38a169;
+    --green-bg: #f0fff4;
+    --green-border: #9ae6b4;
+    --neutral-bg: #f7f8fa;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --text-muted: #718096;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--neutral-bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    touch-action: none;
+}
+
+/* ── Top bar ── */
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+    box-shadow: var(--shadow);
+}
+.btn-back:hover { border-color: #718096; color: var(--text); }
+
+.top-bar-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+
+.zoom-controls {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.btn-zoom {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 18px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    line-height: 1;
+    box-shadow: var(--shadow);
+    user-select: none;
+}
+.btn-zoom:hover { border-color: #718096; color: var(--text); }
+.btn-zoom:active { background: var(--neutral-bg); }
+
+/* ── Map viewport ── */
+#map-viewport {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    background: #e8f0e0;
+}
+#map-viewport.dragging { cursor: grabbing; }
+
+#map-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+/* ── The SVG map ── */
+#map-canvas svg {
+    display: block;
+}
+
+/* ── Overlay SVG (routes + locations) ── */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    overflow: visible;
+}
+
+/* ── Location dots ── */
+.loc-dot {
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.loc-outer {
+    fill: white;
+    stroke: #1a202c;
+    stroke-width: 0.8;
+    transition: r 0.12s;
+}
+.loc-inner {
+    fill: #1a202c;
+}
+
+.loc-dot:hover .loc-outer { r: 5; }
+.loc-dot:hover .loc-inner { fill: #2d3748; }
+
+/* ── Location label ── */
+.loc-label {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 4.2px;
+    font-weight: 600;
+    fill: #1a202c;
+    pointer-events: none;
+    paint-order: stroke;
+    stroke: rgba(255,255,255,0.85);
+    stroke-width: 1.5px;
+    stroke-linejoin: round;
+}
+
+/* ── Route segments ── */
+.route-segment {
+    stroke: none;
+    rx: 0.6;
+    ry: 0.6;
+}
+
+/* ── Tooltip ── */
+#tooltip {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.4rem 0.75rem;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+#tooltip.visible { opacity: 1; }

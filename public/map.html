@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <title>Cambridge Map</title>
+        <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" href="map.css" />
+    </head>
+    <body>
+
+        <div class="top-bar">
+            <a class="btn-back" href="index.html">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Back
+            </a>
+            <span class="top-bar-title">Cambridge Map</span>
+            <div class="zoom-controls">
+                <button class="btn-zoom" id="btnZoomOut" title="Zoom out">−</button>
+                <button class="btn-zoom" id="btnReset" title="Reset view" style="font-size:13px; width:auto; padding: 0 0.6rem;">Reset</button>
+                <button class="btn-zoom" id="btnZoomIn" title="Zoom in">+</button>
+            </div>
+        </div>
+
+        <div id="map-viewport">
+            <div id="map-canvas">
+                <!-- SVG map injected by JS -->
+            </div>
+        </div>
+
+        <div id="tooltip"></div>
+
+        <script src="map.js"></script>
+    </body>
+</html>
