@@ -22,18 +22,88 @@ module.exports.TICKET_LIST = [
         from: "Location C",
         to: "Location D",
     },
+    {
+        points: 6,
+        from: "Location X",
+        to: "Location Y",
+    },
+    {
+        points: 4,
+        from: "Location E",
+        to: "Location F",
+    },
+    {
+        points: 100,
+        from: "Location A'",
+        to: "Location B'",
+    },
+    {
+        points: 10,
+        from: "Location C'",
+        to: "Location D'",
+    },
+    {
+        points: 6,
+        from: "Location X'",
+        to: "Location Y'",
+    },
+    {
+        points: 4,
+        from: "Location E'",
+        to: "Location F'",
+    },
 ];
 
 module.exports.CHALLENGE_LIST = [
     {
+        title: 'Bird watching',
         draws: 1,
-        title: "Fast food",
-        desc: "Visit any restaurant/store that sells food, order a food item and finish it there.",
+        desc: 'Choose a bird, and take a 5-minute video with it always in frame.',
     },
     {
+        title: 'Antiquity',
         draws: 2,
-        title: "Antiquity",
-        desc: "Without any research, visit a historic place and guess its age. You must then verify that the place is at least 100 years old and the guess is within 10% of the actual age. This challenge can be retried, but you cannot visit the same place twice.",
+        desc: 'Without any research, visit a historic place and guess its age. You must then verify that the place is at least 100 years old and the guess is within 10% of the actual age. This challenge can be retried, but you cannot visit the same place twice.',
+    },
+    {
+        title: 'Street food critic',
+        draws: 1,
+        desc: 'Find a street food vendor and try something you have never eaten before. Record a short video review.',
+    },
+    {
+        title: 'Local hero',
+        draws: 2,
+        desc: 'Ask a local resident for their favourite hidden gem in the area and visit it. Take a photo as proof.',
+    },
+    {
+        title: 'Tower view',
+        draws: 2,
+        desc: 'Find the highest publicly accessible viewpoint nearby and take a panoramic photo from the top.',
+    },
+    {
+        title: 'Statue pose',
+        draws: 1,
+        desc: 'Find a statue or public sculpture and recreate its exact pose in a photo side-by-side.',
+    },
+    {
+        title: 'Market bargain',
+        draws: 1,
+        desc: 'Visit a market and negotiate a purchase down by at least 20% from the asking price. Keep the receipt.',
+    },
+    {
+        title: 'Language barrier',
+        draws: 2,
+        desc: 'Order food or ask for directions entirely in the local language without using a translation app. Record it.',
+    },
+    {
+        title: 'Doorway gallery',
+        draws: 1,
+        desc: 'Photograph five distinctly different doorways or entrances within a 10-minute walk of your current location.',
+    },
+    {
+        title: 'Number chase',
+        draws: 2,
+        desc: 'Find three different street signs, plaques, or markers that together contain the digits of the current year in order. Photograph each one.',
     },
 ];
 

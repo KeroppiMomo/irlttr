@@ -92,7 +92,7 @@ router.post("/api/ticket-new", (req, res) => {
                 availableTickets[j] = x;
             }
 
-            const choosing = availableTickets.slice(0, availableTickets.length);
+            const choosing = availableTickets.slice(0, Math.min(availableTickets.length, DATA.TICKET_DRAW_SIZE));
             state.tickets[team].choosing = choosing;
         }
     }
