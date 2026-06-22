@@ -50,7 +50,7 @@ function getVertexPositions() {
     if (vertexPositions) return vertexPositions;
     vertexPositions = [];
     locations.forEach((_, i) => {
-        const el = document.querySelector(`#layer3 circle[inkscape\\:label="v${i}"`);
+        const el = document.querySelector(`#layer3 circle[inkscape\\:label="v${i}"]`);
         if (!el) {
             vertexPositions[i] = { x: 0, y: 0 };
             return;
@@ -73,7 +73,7 @@ function buildOverlay() {
     const positions = getVertexPositions();
 
     // ── Routes ──
-    routes.forEach(route => {
+    routes.forEach((route, routeIndex) => {
         const from = positions[route.from];
         const to   = positions[route.to];
         if (!from || !to) return;
@@ -106,6 +106,10 @@ function buildOverlay() {
         // Recompute actual total after scaling
         const totalLen = n * segW + (n - 1) * segGap;
 
+        // Group for this entire route (all colour tracks)
+        const routeG = document.createElementNS(SVG_NS, 'g');
+        routeG.style.cursor = 'pointer';
+
         route.colours.forEach((colour, ci) => {
             const style = colourStyle(colour);
             const isDbl = route.colours.length === 2;
@@ -135,9 +139,51 @@ function buildOverlay() {
                 rect.setAttribute('stroke-width', 0.3);
                 rect.setAttribute('opacity',      0.92);
                 rect.setAttribute('transform', `rotate(${angle},${sx},${sy})`);
-                svgEl.appendChild(rect);
+                routeG.appendChild(rect);
             }
+
+            // Invisible hit-area rect covering the whole track (easier to tap)
+            const midX2 = (from.x + to.x) / 2 + ox;
+            const midY2 = (from.y + to.y) / 2 + oy;
+            const hit = document.createElementNS(SVG_NS, 'rect');
+            hit.setAttribute('x',      midX2 - totalLen / 2 - segGap);
+            hit.setAttribute('y',      midY2 - (segH * 2));
+            hit.setAttribute('width',  totalLen + segGap * 2);
+            hit.setAttribute('height', segH * 4);
+            hit.setAttribute('fill',   'transparent');
+            hit.setAttribute('stroke', 'none');
+            hit.setAttribute('transform', `rotate(${angle},${midX2},${midY2})`);
+            routeG.appendChild(hit);
         });
+
+        // Click / tap handler
+        let dragMoved = false;
+        routeG.addEventListener('mousedown', () => { dragMoved = false; });
+        routeG.addEventListener('mousemove', () => { dragMoved = true; });
+        routeG.addEventListener('mouseup', e => {
+            showRoutePanel(routeIndex);
+        });
+        routeG.addEventListener('touchstart', e => { dragMoved = false; }, { passive: true });
+        routeG.addEventListener('touchmove',  () => { dragMoved = true;  }, { passive: true });
+        routeG.addEventListener('touchend', e => {
+            showRoutePanel(routeIndex);
+        }, { passive: true });
+
+        // Hover highlight
+        routeG.addEventListener('mouseenter', () => {
+            routeG.querySelectorAll('rect[fill]:not([fill="transparent"])').forEach(r => {
+                r.setAttribute('opacity', '1');
+                r.setAttribute('stroke-width', '0.6');
+            });
+        });
+        routeG.addEventListener('mouseleave', () => {
+            routeG.querySelectorAll('rect[fill]:not([fill="transparent"])').forEach(r => {
+                r.setAttribute('opacity', '0.92');
+                r.setAttribute('stroke-width', '0.3');
+            });
+        });
+
+        svgEl.appendChild(routeG);
     });
 
     // ── Location dots + labels ──
@@ -146,8 +192,9 @@ function buildOverlay() {
         const g = document.createElementNS(SVG_NS, 'g');
 
         g.id = `overlayV${i}`;
+        g.style.cursor = 'pointer';
 
-        const originalDot = document.querySelector(`#layer3 circle[inkscape\\:label="v${i}"`);
+        const originalDot = document.querySelector(`#layer3 circle[inkscape\\:label="v${i}"]`);
         originalDot.setAttribute("visibility", "hidden");
 
         // Inner dot
@@ -170,6 +217,19 @@ function buildOverlay() {
         label.setAttribute('fill', '#1a202c');
 
         g.appendChild(label);
+
+        // Click / tap handler for location
+        g.addEventListener('mousedown', () => { locDragMoved = false; });
+        g.addEventListener('mousemove', () => { locDragMoved = true; });
+        g.addEventListener('mouseup', e => {
+            showLocationPanel(i);
+        });
+        g.addEventListener('touchstart', () => { locDragMoved = false; }, { passive: true });
+        g.addEventListener('touchmove',  () => { locDragMoved = true;  }, { passive: true });
+        g.addEventListener('touchend', e => {
+            showLocationPanel(i);
+        }, { passive: true });
+
         svgEl.appendChild(g);
     });
     
@@ -430,3 +490,63 @@ async function init() {
 
 window.addEventListener('resize', resetView);
 init();
+
+
+// ════════════════════════════════════════════════
+// Info panel
+// ════════════════════════════════════════════════
+const infoPanel        = document.getElementById('info-panel');
+const infoPanelContent = document.getElementById('info-panel-content');
+
+function showLocationPanel(locIndex) {
+    const loc = locations[locIndex];
+
+    const mapsUrl = `https://www.google.com/maps?q=${loc.long},${loc.lat}`;
+
+    infoPanelContent.innerHTML = `
+        <div class="panel-location-name">
+            <span style="color:var(--text-muted);font-size:13px;font-weight:500;margin-right:0.4rem">#${locIndex}</span>${loc.name}
+        </div>
+        <a class="panel-gmaps-link" href="${mapsUrl}" target="_blank" rel="noopener">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                <circle cx="12" cy="9" r="2.5"/>
+            </svg>
+            View in Google Maps
+        </a>
+    `;
+}
+
+function showRoutePanel(routeIndex) {
+    const route  = routes[routeIndex];
+    const fromLoc = locations[route.from];
+    const toLoc   = locations[route.to];
+
+    // Colour pips
+    const pipHTML = route.colours.map(c => {
+        const style = colourStyle(c);
+        return `<span class="panel-colour-pip" style="background:${style.fill};border:1px solid ${style.stroke}" title="${c || 'neutral'}"></span>`;
+    }).join('');
+
+    // Claim link — goes to claim.html with route index as query param
+    const claimUrl = `claim.html?route=${routeIndex}`;
+
+    infoPanelContent.innerHTML = `
+        <div class="panel-route-header">
+            <span>${fromLoc.name}</span>
+            <svg class="panel-route-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <span>${toLoc.name}</span>
+        </div>
+        <div class="panel-route-meta">
+            <span class="panel-route-length">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18M3 3v18"/><polyline points="3 21 21 3"/></svg>
+                Length&nbsp;<strong>${route.length}</strong>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:0.3rem">${pipHTML}</span>
+        </div>
+        <a class="btn-claim" href="${claimUrl}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Claim route
+        </a>
+    `;
+}
