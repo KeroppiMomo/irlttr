@@ -1,0 +1,179 @@
+
+:root {
+    --bg-color: #f7fafc;
+    --panel-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --text-main: #1a202c;
+    --text-muted: #718096;
+    --primary: #3182ce;
+    --primary-hover: #2b6cb0;
+    --success: #38a169;
+    --success-hover: #276749;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    background: var(--panel-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+/* Back Button styled as text link with arrow */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+}
+.btn-back:hover {
+    color: var(--text-main);
+}
+
+/* Section 1: Route Info (Mirroring map.js styling styles) */
+.panel-route-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.75rem;
+}
+.panel-route-arrow {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.panel-route-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 14px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.panel-route-length {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.panel-colour-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.panel-colour-pip {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+
+/* Section 2: Card Counter Grid */
+.counters-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+@media(max-width: 400px) {
+    .counters-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.counter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+}
+.counter-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 15px;
+}
+.counter-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.counter-value {
+    font-weight: 700;
+    font-size: 16px;
+    min-width: 2.5rem;
+    text-align: center;
+}
+.btn-step {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.btn-step:hover:not(:disabled) {
+    background: var(--border-color);
+}
+.btn-step:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Section 3: Primary action button */
+.btn-claim {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: var(--success);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: background-color 0.2s;
+}
+.btn-claim:hover {
+    background-color: var(--success-hover);
+}
+
+.error-msg {
+    color: #x53030;
+    text-align: center;
+    padding: 2rem 0;
+}
