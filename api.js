@@ -75,14 +75,20 @@ router.post("/api/ticket-new", (req, res) => {
         return;
     }
 
-    if (state.tickets[team].choosing === null) {
-        const takenTickets = state.tickets.map(({kept, choosing}) =>
-            kept.map(({id}) => id).concat(choosing === null ? [] : choosing)
-        ).flat();
+    // Compute available tickets:
+    // - any ticket `kept` by any team is taken
+    // - any ticket currently `choosing` by *other* teams is reserved and taken
+    const takenTickets = [];
+    state.tickets.forEach((t, idx) => {
+        if (Array.isArray(t.kept)) takenTickets.push(...t.kept.map(k => k.id));
+        if (Array.isArray(t.choosing) && idx !== team) takenTickets.push(...t.choosing);
+    });
 
-        let availableTickets =
-            DATA.TICKET_LIST.map((_, i) => i)
-            .filter((x) => !takenTickets.includes(x));
+    let availableTickets = DATA.TICKET_LIST.map((_, i) => i).filter(x => !takenTickets.includes(x));
+
+    // If there is no choosing list yet, or it's empty but tickets are available, (re)generate it
+    if (state.tickets[team].choosing === null ||
+        (Array.isArray(state.tickets[team].choosing) && state.tickets[team].choosing.length === 0 && availableTickets.length !== 0)) {
 
         if (availableTickets.length !== 0) {
             for (let i = 0; i < Math.min(availableTickets.length, DATA.TICKET_DRAW_SIZE); i++) {
@@ -94,6 +100,9 @@ router.post("/api/ticket-new", (req, res) => {
 
             const choosing = availableTickets.slice(0, availableTickets.length);
             state.tickets[team].choosing = choosing;
+        } else {
+            // explicitly set empty array so clients receive [] instead of null
+            state.tickets[team].choosing = [];
         }
     }
 

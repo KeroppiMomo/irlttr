@@ -12,16 +12,14 @@ module.exports.LOCOMOTIVE_NUM = 14;
 module.exports.TICKET_DRAW_SIZE = 3;
 
 module.exports.TICKET_LIST = [
-    {
-        points: 6,
-        from: "Location A",
-        to: "Location B",
-    },
-    {
-        points: 10,
-        from: "Location C",
-        to: "Location D",
-    },
+    { points: 6,  from: "Location A",        to: "Location B" },
+    { points: 10, from: "Location C",        to: "Location D" },
+    { points: 5,  from: "Old Market",        to: "Riverfront" },
+    { points: 8,  from: "Central Park",      to: "Lighthouse" },
+    { points: 7,  from: "University Hill",   to: "Grand Avenue" },
+    { points: 4,  from: "West End",          to: "Clocktower" },
+    { points: 9,  from: "Harbour Pier",      to: "Botanical Walk" },
+    { points: 3,  from: "Station North",     to: "Old Mill" },
 ];
 
 module.exports.CHALLENGE_LIST = [
