@@ -1,81 +1,11 @@
 const CHALLENGE_STATE_KEY = 'challenge_state';
 const TEAM_NAMES_KEY      = 'team_names';
 
-const currentTeam = localStorage.getItem('my_team') || '';
+// const currentTeam = localStorage.getItem('my_team') || 0;
+const currentTeam = 1;
 if (currentTeam) document.body.className = 'team-' + currentTeam;
 
-// ── Challenge definitions ──
-const CHALLENGES = [
-    {
-        id: 'bird-watching',
-        name: 'Bird watching',
-        draws: 1,
-        desc: 'Choose a bird, and take a 5-minute video with it always in frame.',
-    },
-    {
-        id: 'antiquity',
-        name: 'Antiquity',
-        draws: 2,
-        desc: 'Without any research, visit a historic place and guess its age. You must then verify that the place is at least 100 years old and the guess is within 10% of the actual age. This challenge can be retried, but you cannot visit the same place twice.',
-    },
-    {
-        id: 'street-food',
-        name: 'Street food critic',
-        draws: 1,
-        desc: 'Find a street food vendor and try something you have never eaten before. Record a short video review.',
-    },
-    {
-        id: 'local-hero',
-        name: 'Local hero',
-        draws: 2,
-        desc: 'Ask a local resident for their favourite hidden gem in the area and visit it. Take a photo as proof.',
-    },
-    {
-        id: 'tower-view',
-        name: 'Tower view',
-        draws: 2,
-        desc: 'Find the highest publicly accessible viewpoint nearby and take a panoramic photo from the top.',
-    },
-    {
-        id: 'statue-pose',
-        name: 'Statue pose',
-        draws: 1,
-        desc: 'Find a statue or public sculpture and recreate its exact pose in a photo side-by-side.',
-    },
-    {
-        id: 'market-bargain',
-        name: 'Market bargain',
-        draws: 1,
-        desc: 'Visit a market and negotiate a purchase down by at least 20% from the asking price. Keep the receipt.',
-    },
-    {
-        id: 'language-barrier',
-        name: 'Language barrier',
-        draws: 2,
-        desc: 'Order food or ask for directions entirely in the local language without using a translation app. Record it.',
-    },
-    {
-        id: 'doorway-gallery',
-        name: 'Doorway gallery',
-        draws: 1,
-        desc: 'Photograph five distinctly different doorways or entrances within a 10-minute walk of your current location.',
-    },
-    {
-        id: 'number-chase',
-        name: 'Number chase',
-        draws: 2,
-        desc: 'Find three different street signs, plaques, or markers that together contain the digits of the current year in order. Photograph each one.',
-    },
-];
-
-// ── Storage helpers ──
-function stateKey() { return CHALLENGE_STATE_KEY + '_' + (currentTeam || 'none'); }
-
-function getState() {
-    try { return JSON.parse(localStorage.getItem(stateKey())) || { active: null }; }
-    catch { return { active: null }; }
-}
-function saveState(s) { localStorage.setItem(stateKey(), JSON.stringify(s)); }
+let CHALLENGES;
 
 // ── Build a challenge item element ──
 function buildChallengeEl(challenge) {
@@ -89,7 +19,7 @@ function buildChallengeEl(challenge) {
 
     const name = document.createElement('span');
     name.className = 'challenge-name';
-    name.textContent = challenge.name;
+    name.textContent = challenge.title;
 
     const reward = document.createElement('span');
     reward.className = 'challenge-reward';
@@ -117,35 +47,93 @@ function renderIdle() {
 }
 
 // ── Render active view ──
-function renderActive(challenge) {
-    const container = document.getElementById('activeChallenge');
-    container.innerHTML = '';
-    container.appendChild(buildChallengeEl(challenge));
+function renderActive(challenges) {
+    const container1 = document.getElementById('activeChallenge1');
+    container1.innerHTML = '';
+    container1.appendChild(buildChallengeEl(CHALLENGES[challenges[0]]));
+
+    const container2 = document.getElementById('activeChallenge2');
+    container2.innerHTML = '';
+    container2.appendChild(buildChallengeEl(CHALLENGES[challenges[1]]));
 
     document.getElementById('viewIdle').style.display = 'none';
     document.getElementById('viewActive').style.display = '';
 }
 
-// ── Start: pick a random challenge ──
-function startChallenge() {
-    const pick = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
-    saveState({ active: pick });
-    renderActive(pick);
+// ── Start: pick a random challenge via the backend API ──
+async function startChallenge() {
+    try {
+        const response = await fetch('/api/challenge-start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ team: currentTeam })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to start challenge');
+        }
+
+        // The backend returns an array of two challenge indices, e.g., [1, 5]
+        const challengeIndices = await response.json();
+
+        renderActive(challengeIndices);
+
+    } catch (error) {
+        console.error("Error communicating with API:", error);
+        alert(`Could not start challenge: ${error.message}`);
+    }
 }
 
 // ── End: complete or veto ──
-function endChallenge(outcome) {
-    // outcome is 'complete' or 'veto' — hook in scoring/log here later if needed
-    saveState({ active: null });
+async function endChallenge(result) {
+    const response = await fetch('/api/challenge-end', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            team: currentTeam,
+            result: result,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        alert("Error communicating with API:", errorText);
+        throw new Error(errorText || 'Failed to start challenge');
+    }
+
     renderIdle();
 }
 
 // ── Init ──
-(function init() {
-    const state = getState();
-    if (state.active) {
-        renderActive(state.active);
-    } else {
+(async function init() {
+    [challengeRes, stateRes] = await Promise.all([
+        fetch("api/challenge-list"),
+        fetch("api/state"),
+    ]);
+
+    if (!challengeRes.ok) {
+        alert("Could not fetch challenge list");
+        console.error(challengeRes);
+        throw new Error("Could not fetch challenge list");
+    }
+    if (!stateRes.ok) {
+        alert("Could not fetch state");
+        console.error(stateRes);
+        throw new Error("Could not fetch state");
+    }
+
+    CHALLENGES = await challengeRes.json();
+    const state = await stateRes.json();
+
+    const teamChall = state.challenges[currentTeam];
+    if (teamChall.length === 0 || teamChall.at(-1).end !== null) {
         renderIdle();
+    } else {
+        renderActive(teamChall.at(-1).id);
     }
 })();

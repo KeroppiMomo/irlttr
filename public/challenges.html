@@ -39,9 +39,13 @@
                 <div class="card active-card">
                     <div class="active-eyebrow">
                         <span class="pulse-dot"></span>
-                        Challenge in progress
+                        Challenge in progress: choose one of the following
                     </div>
-                    <div id="activeChallenge"></div>
+                    <div id="activeChallenge1"></div>
+
+                    <br>
+
+                    <div id="activeChallenge2"></div>
                 </div>
 
                 <div class="action-row">
@@ -49,9 +53,13 @@
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         Complete
                     </button>
-                    <button class="btn-veto" onclick="endChallenge('veto')">
+                    <button class="btn-veto" onclick="endChallenge('veto-point')">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                        Veto
+                        Veto (5-point penalty)
+                    </button>
+                    <button class="btn-veto" onclick="endChallenge('veto-time')">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                        Veto (no challenge in 20 min)
                     </button>
                 </div>
             </div>
