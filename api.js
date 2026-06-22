@@ -98,7 +98,7 @@ router.post("/api/ticket-new", (req, res) => {
                 availableTickets[j] = x;
             }
 
-            const choosing = availableTickets.slice(0, availableTickets.length);
+            const choosing = availableTickets.slice(0, Math.min(availableTickets.length, DATA.TICKET_DRAW_SIZE));
             state.tickets[team].choosing = choosing;
         } else {
             // explicitly set empty array so clients receive [] instead of null
@@ -153,6 +153,74 @@ router.post("/api/ticket-choose", (req, res) => {
             completion: null,
         });
     }
+
+    res.status(200).send();
+});
+
+router.post("/api/challenge-start", (req, res) => {
+    if (req.body === undefined) {
+        res.status(400).send("JSON request body not found");
+        return;
+    }
+
+    const team = parseInt(req.body.team);
+    if (!(0 <= team && team < DATA.TEAM_NUM)) {
+        res.status(400).send(`Invalid parameter team ${req.body.team}`);
+        return;
+    }
+
+    if (state.challenges[team].length !== 0 && state.challenges[team].at(-1).end === null) {
+        res.status(403).send("Could not start challenge while there is ongoing challenge");
+        return;
+    }
+
+    // Pick two
+    const challenge1 = Math.floor(Math.random() * DATA.CHALLENGE_LIST.length);
+    const challenge2 = (() => {
+        let x;
+        do {
+            x = Math.floor(Math.random() * DATA.CHALLENGE_LIST.length);
+        } while (x === challenge1);
+        return x;
+    })();
+    const challenges = [challenge1, challenge2];
+
+    state.challenges[team].push({
+        id: challenges,
+        start: Date.now(),
+        end: null,
+        result: null,
+    });
+
+    res.send(JSON.stringify(challenges));
+});
+
+router.post("/api/challenge-end", (req, res) => {
+    if (req.body === undefined) {
+        res.status(400).send("JSON request body not found");
+        return;
+    }
+
+    const team = parseInt(req.body.team);
+    if (!(0 <= team && team < DATA.TEAM_NUM)) {
+        res.status(400).send(`Invalid parameter team ${req.body.team}`);
+        return;
+    }
+
+    const result = req.body.result;
+    if (!(["complete", "veto-point", "veto-time"].includes(result))) {
+        res.status(400).send(`Unknown result ${result}`);
+        return;
+    }
+
+    if (!(state.challenges[team].length !== 0 && state.challenges[team].at(-1).end === null)) {
+        res.status(403).send("Could not end challenge while there is no ongoing challenge");
+        return;
+    }
+
+    const curChall = state.challenges[team].at(-1);
+    curChall.end = Date.now();
+    curChall.result = result;
 
     res.status(200).send();
 });
