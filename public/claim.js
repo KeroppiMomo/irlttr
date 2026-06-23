@@ -1,15 +1,18 @@
+const team = localStorage.getItem('my_team') || -1;
+
+if (team) document.body.className = 'team-' + team;
+
 const COLOUR_MAP = {
+    pink:     { name: 'Pink',   fill: '#d53f8c', stroke: '#b83280' },
     red:      { name: 'Red',    fill: '#e53e3e', stroke: '#c53030' },
-    blue:     { name: 'Blue',   fill: '#3182ce', stroke: '#2b6cb0' },
+    orange:   { name: 'Orange', fill: '#dd6b20', stroke: '#c05621' },
     yellow:   { name: 'Yellow', fill: '#d69e2e', stroke: '#b7791f' },
     green:    { name: 'Green',  fill: '#38a169', stroke: '#276749' },
-    black:    { name: 'Black',  fill: '#2d3748', stroke: '#1a202c' },
-    purple:   { name: 'Purple', fill: '#805ad5', stroke: '#6b46c1' },
-    orange:   { name: 'Orange', fill: '#dd6b20', stroke: '#c05621' },
-    pink:     { name: 'Pink',   fill: '#d53f8c', stroke: '#b83280' },
+    blue:     { name: 'Blue',   fill: '#3182ce', stroke: '#2b6cb0' },
     white:    { name: 'White',  fill: '#e2e8f0', stroke: '#a0aec0' },
+    black:    { name: 'Black',  fill: '#2d3748', stroke: '#1a202c' },
     null:     { name: 'Neutral', fill: '#a0aec0', stroke: '#718096' },
-    wild:     { name: 'Wild',   fill: 'linear-gradient(45deg, #e53e3e, #3182ce, #d69e2e, #38a169)', stroke: '#4a5568' }
+    locomotive:     { name: 'Locomotive',   fill: 'linear-gradient(45deg, #e53e3e, #3182ce, #d69e2e, #38a169)', stroke: '#4a5568' }
 };
 
 // Global State
@@ -21,17 +24,22 @@ let locationsData = null;
 async function initClaimPage() {
     const appEl = document.getElementById('app');
     const urlParams = new URLSearchParams(window.location.search);
-    const routeIndex = urlParams.get('route');
+    const routeIndex = parseInt(urlParams.get('route'));
+    const subrouteIndex = parseInt(urlParams.get('subroute'));
 
-    if (routeIndex === null) {
+    if (routeIndex === null || subrouteIndex === null) {
         appEl.innerHTML = `<div class="error-msg">No route selected. Go back to the map.</div>`;
         return;
     }
 
     try {
         // Fetching map setup
-        const dataRes = await fetch("api/map");
-        if (!dataRes.ok) throw new Error("Could not load data");
+        const [dataRes, stateRes] = await Promise.all([
+            fetch("api/map"),
+            fetch("api/state"),
+        ]);
+        if (!dataRes.ok) throw new Error(`Could not load data: ${await dataRes.text()}`);
+        if (!stateRes.ok) throw new Error(`Could not load state: ${await stateRes.text()}`);
 
         const data = await dataRes.json();
         locationsData = data.locations;
@@ -44,29 +52,28 @@ async function initClaimPage() {
 
         // Mocking user inventory structure from your game architecture
         // (Replace this or pull it from an actual user session endpoint like `api/user/hand`)
-        playerInventory = data.playerHand || {
-            red: 5, blue: 2, yellow: 1, green: 4, black: 0, 
-            purple: 6, orange: 3, pink: 2, white: 1, wild: 4
-        };
+        const state = await stateRes.json();
+        playerInventory = state.cards[team];
 
         // Determine which counters to render
         let trackingColours = [];
-        const isNeutralRoute = routeData.colours.includes(null);
+        const isNeutralRoute = routeData.colours[subrouteIndex] === null;
 
         if (isNeutralRoute) {
             // "null" route: include all colors except 'null' itself, plus wild
             trackingColours = Object.keys(COLOUR_MAP).filter(c => c !== 'null');
         } else {
             // Regular colored route: explicit track color choices + wild
-            trackingColours = [...new Set(routeData.colours), 'wild'];
+            trackingColours = [routeData.colours[subrouteIndex], 'locomotive'];
         }
 
         // Initialize chosen counter allocations
-        trackingColours.forEach(c => {
-            selectedCards[c] = 0;
-        });
+        for (const colour in COLOUR_MAP) {
+            if (colour !== "null")
+                selectedCards[colour] = 0;
+        }
 
-        renderPage(routeIndex, trackingColours);
+        renderPage(routeIndex, subrouteIndex, trackingColours);
 
     } catch (err) {
         console.error(err);
@@ -90,18 +97,17 @@ function updateCounter(colour, change) {
     }
 }
 
-function renderPage(routeIndex, trackingColours) {
+function renderPage(routeIndex, subrouteIndex, trackingColours) {
     const fromLoc = locationsData[routeData.from];
     const toLoc = locationsData[routeData.to];
 
-    const pipHTML = routeData.colours.map(c => {
-        const config = COLOUR_MAP[c] || COLOUR_MAP[null];
-        return `<span class="panel-colour-pip" style="background:${config.fill};border:1px solid ${config.stroke}" title="${config.name}"></span>`;
-    }).join('');
+    const c = routeData.colours[subrouteIndex];
+    const config = COLOUR_MAP[c] || COLOUR_MAP[null];
+    const pipHTML = `<span class="panel-colour-pip" style="background:${config.fill};border:1px solid ${config.stroke}" title="${config.name}"></span>`;
 
     const countersHTML = trackingColours.map(c => {
         const config = COLOUR_MAP[c];
-        const isWild = c === 'wild';
+        const isWild = c === 'locomotive';
         const bgStyle = isWild ? `background:${config.fill}` : `background:${config.fill}; border:1px solid ${config.stroke}`;
         const owned = playerInventory[c] || 0;
 
@@ -153,7 +159,7 @@ function renderPage(routeIndex, trackingColours) {
         ${countersHTML}
         </div>
 
-        <button class="btn-claim" onclick="submitClaim(${routeIndex})">
+        <button class="btn-claim" onclick="submitClaim(${routeIndex}, ${subrouteIndex})">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
@@ -162,29 +168,25 @@ function renderPage(routeIndex, trackingColours) {
         `;
 }
 
-async function submitClaim(routeIndex) {
+async function submitClaim(routeId, subrouteId) {
     // Pack selected quantities into a simplified payload to be evaluated by the server
     const payload = {
-        routeIndex: parseInt(routeIndex),
-        cardsUsed: {}
+        team,
+        routeId,
+        subrouteId,
+        cards: selectedCards,
     };
-
-    // Filter out items where count is 0 to keep request payload lean
-    Object.entries(selectedCards).forEach(([color, count]) => {
-        if (count > 0) payload.cardsUsed[color] = count;
-    });
 
     try {
         // Send choice to your server backend setup for length/match validation 
         const response = await fetch("api/claim-route", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.message || "Server side validation failed.");
+            throw new Error(await response.text());
         }
 
         alert("Route successfully claimed!");

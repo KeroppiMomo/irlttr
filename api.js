@@ -47,6 +47,11 @@ router.post("/api/reset", (req, res) => {
     res.status(200).send();
 });
 
+router.post("/api/set-state", (req, res) => {
+    state = req.body;
+    req.status(200).send();
+});
+
 router.post("/api/start", (req, res) => {
     if (state.game.start) {
         res.status(403).send("Game already started. To reset game, POST /api/reset.");
@@ -321,6 +326,93 @@ router.post("/api/card-draw", (req, res) => {
             state.halfDraws[team] += 1;
         }
     }
+});
+
+// Format:
+// { team: int, routeId: int, subrouteId: int, cards: freq dict }
+router.post("/api/claim-route", (req, res) => {
+    if (req.body === undefined) {
+        res.status(400).send("JSON request body not found");
+        return;
+    }
+
+    const team = parseInt(req.body.team);
+    if (!(0 <= team && team < DATA.TEAM_NUM)) {
+        res.status(400).send(`Invalid parameter team ${req.body.team}`);
+        return;
+    }
+
+    const routeId = req.body.routeId;
+    if (!(0 <= routeId && routeId < DATA.GAME_MAP.routes.length)) {
+        res.status(400).send(`Invalid parameter routeId ${req.body.routeId}`);
+        return;
+    }
+
+    const routeInfo = DATA.GAME_MAP.routes[routeId];
+
+    const subrouteId = req.body.subrouteId;
+    if (!(0 <= subrouteId && subrouteId < routeInfo.colours.length)) {
+        res.status(400).send(`Invalid parameter subrouteId ${req.body.subrouteId}`);
+        return;
+    }
+
+    const cards = req.body.cards;
+
+    if (state.game.start === null) {
+        res.status(403).send("Route claiming not allowed before game starts");
+        return;
+    }
+
+    if (state.routes[routeId][subrouteId] !== null) {
+        res.status(403).send("Subroute already occupied");
+        return;
+    }
+    if (state.routes[routeId].includes(team)) {
+        res.status(403).send("A team can only a route once");
+        return
+    }
+
+    let requiredColour = routeInfo.colours[subrouteId];
+    if (requiredColour === null) {
+        requiredColour = "pink";
+        for (const colour of DATA.TRAIN_COLOURS) {
+            if (cards[colour] > 0) {
+                requiredColour = colour;
+                break;
+            }
+        }
+    }
+
+    if (cards[requiredColour] + cards[DATA.TRAIN_LOCOMOTIVE] !== routeInfo.length) {
+        res.status(403).send(`Incorrect cards: require ${requiredColour} of length ${routeInfo.length}`);
+        return
+    }
+    for (const colour of DATA.TRAIN_COLOURS) {
+        if (colour !== requiredColour && cards[colour] > 0) {
+            res.status(403).send("Unnecessary cards");
+            return;
+        }
+    }
+
+    for (const colour of [...DATA.TRAIN_COLOURS, DATA.TRAIN_LOCOMOTIVE]) {
+        if (cards[colour] > state.cards[team][colour]) {
+            res.status(403).send(`Insufficient ${colour} cards`);
+            return;
+        }
+    }
+
+    state.routes[routeId][subrouteId] = team;
+    for (const colour of [...DATA.TRAIN_COLOURS, DATA.TRAIN_LOCOMOTIVE]) {
+        state.cards[team][colour] -= cards[colour];
+    }
+
+    for (let i = 0; i < DATA.FLOP_SIZE; ++i) {
+        if (state.flop[i] === null) {
+            state.flop[i] = sampleFromDeck(state);
+        }
+    }
+
+    res.status(200).send();
 });
 
 module.exports = router;

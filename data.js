@@ -17,46 +17,37 @@ module.exports.TICKET_DRAW_MIN_KEPT = 1;
 module.exports.TICKET_DRAW_TIME = 30 * 60 * 1000; // in milliseconds
 
 module.exports.TICKET_LIST = [
-    {
-        points: 6,
-        from: "Location A",
-        to: "Location B",
-    },
-    {
-        points: 10,
-        from: "Location C",
-        to: "Location D",
-    },
-    {
-        points: 6,
-        from: "Location X",
-        to: "Location Y",
-    },
-    {
-        points: 4,
-        from: "Location E",
-        to: "Location F",
-    },
-    {
-        points: 100,
-        from: "Location A'",
-        to: "Location B'",
-    },
-    {
-        points: 10,
-        from: "Location C'",
-        to: "Location D'",
-    },
-    {
-        points: 6,
-        from: "Location X'",
-        to: "Location Y'",
-    },
-    {
-        points: 4,
-        from: "Location E'",
-        to: "Location F'",
-    },
+    { from: 3, to: 37, points: 25 },
+    { from: 25, to: 4, points: 21 },
+    { from: 22, to: 31, points: 20 },
+    { from: 35, to: 5, points: 21 },
+    { from: 11, to: 2, points: 17 },
+    { from: 6, to: 34, points: 16 },
+    { from: 26, to: 9, points: 15 },
+    { from: 35, to: 29, points: 15 },
+    { from: 1, to: 9, points: 13 },
+    { from: 23, to: 32, points: 13 },
+    { from: 30, to: 34, points: 13 },
+    { from: 11, to: 24, points: 13 },
+    { from: 22, to: 13, points: 12 },
+    { from: 12, to: 33, points: 12 },
+    { from: 15, to: 21, points: 11 },
+    { from: 14, to: 1, points: 11 },
+    { from: 23, to: 7, points: 10 },
+    { from: 6, to: 17, points: 10 },
+    { from: 4, to: 0, points: 10 },
+    { from: 29, to: 36, points: 9 },
+    { from: 20, to: 25, points: 9 },
+    { from: 18, to: 7, points: 8 },
+    { from: 0, to: 8, points: 8 },
+    { from: 17, to: 30, points: 7 },
+    { from: 6, to: 15, points: 7 },
+    { from: 15, to: 8, points: 7 },
+    { from: 8, to: 3, points: 7 },
+    { from: 18, to: 19, points: 7 },
+    { from: 33, to: 27, points: 6 },
+    { from: 28, to: 26, points: 5 },
+    { from: 10, to: 16, points: 4 }
 ];
 
 module.exports.CHALLENGE_LIST = [
@@ -345,7 +336,7 @@ module.exports.GAME_MAP = {
         {
             from: 2,
             to: 3,
-            length: 6,
+            length: 5,
             colours: ["blue"],
         },
         {
@@ -357,7 +348,7 @@ module.exports.GAME_MAP = {
         {
             from: 3,
             to: 9,
-            length: 6,
+            length: 5,
             colours: ["yellow", "black"],
         },
         {
@@ -387,7 +378,7 @@ module.exports.GAME_MAP = {
         {
             from: 7,
             to: 10,
-            length: 2,
+            length: 3,
             colours: ["red"],
         },
         {
@@ -423,7 +414,7 @@ module.exports.GAME_MAP = {
         {
             from: 9,
             to: 21,
-            length: 5,
+            length: 6,
             colours: ["pink"],
         },
         {
@@ -513,7 +504,7 @@ module.exports.GAME_MAP = {
         {
             from: 16,
             to: 18,
-            length: 2,
+            length: 1,
             colours: ["blue", "orange"],
         },
         {
@@ -707,6 +698,12 @@ module.exports.GAME_MAP = {
             to: 37,
             length: 2,
             colours: ["white", "red"],
+        },
+        {
+            from: 23,
+            to: 28,
+            length: 2,
+            colours: ["orange", "green"],
         },
     ],
 };

@@ -4,6 +4,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 // ════════════════════════════════════════════════
 let locations;
 let routes;
+let state;
 
 // ════════════════════════════════════════════════
 // Colour mapping
@@ -110,16 +111,21 @@ function buildOverlay() {
         const routeG = document.createElementNS(SVG_NS, 'g');
         routeG.style.cursor = 'pointer';
 
-        route.colours.forEach((colour, ci) => {
+        route.colours.forEach((colour, subrouteIndex) => {
             const style = colourStyle(colour);
             const isDbl = route.colours.length === 2;
-            const sign  = isDbl ? (ci === 0 ? -1 : 1) : 0;
+            const sign  = isDbl ? (subrouteIndex === 0 ? -1 : 1) : 0;
             const ox = sign * px * ROUTE_OFFSET;
             const oy = sign * py * ROUTE_OFFSET;
 
             // Centre of the route segment strip (between the two nodes)
             const midX = (from.x + to.x) / 2 + ox;
             const midY = (from.y + to.y) / 2 + oy;
+
+
+            const subrouteG = document.createElementNS(SVG_NS, 'g');
+
+            const claimedBy = state.routes[routeIndex][subrouteIndex];
 
             for (let i = 0; i < n; i++) {
                 // Position of this segment's centre along the route axis
@@ -139,49 +145,59 @@ function buildOverlay() {
                 rect.setAttribute('stroke-width', 0.3);
                 rect.setAttribute('opacity',      0.92);
                 rect.setAttribute('transform', `rotate(${angle},${sx},${sy})`);
-                routeG.appendChild(rect);
+
+                subrouteG.appendChild(rect);
+
+                if (claimedBy !== null) {
+                    const TEAM_COLOUR = ["#e53e3e", "#3182ce", "#d69e2e", "#38a169" ];
+                    const dot = document.createElementNS(SVG_NS, "circle");
+                    dot.setAttribute('cx', sx);
+                    dot.setAttribute('cy', sy - 0.5);
+                    dot.setAttribute('r', segH * 0.7);
+                    dot.setAttribute('fill', TEAM_COLOUR[claimedBy]);
+                    dot.setAttribute('style', "filter: drop-shadow( 0px 0.5px 0px rgba(0, 0, 0, .5));");
+                    dot.setAttribute('z-index', "100");
+                    subrouteG.appendChild(dot);
+                }
             }
+            routeG.appendChild(subrouteG);
 
-            // Invisible hit-area rect covering the whole track (easier to tap)
-            const midX2 = (from.x + to.x) / 2 + ox;
-            const midY2 = (from.y + to.y) / 2 + oy;
-            const hit = document.createElementNS(SVG_NS, 'rect');
-            hit.setAttribute('x',      midX2 - totalLen / 2 - segGap);
-            hit.setAttribute('y',      midY2 - (segH * 2));
-            hit.setAttribute('width',  totalLen + segGap * 2);
-            hit.setAttribute('height', segH * 4);
-            hit.setAttribute('fill',   'transparent');
-            hit.setAttribute('stroke', 'none');
-            hit.setAttribute('transform', `rotate(${angle},${midX2},${midY2})`);
-            routeG.appendChild(hit);
-        });
-
-        // Click / tap handler
-        let dragMoved = false;
-        routeG.addEventListener('mousedown', () => { dragMoved = false; });
-        routeG.addEventListener('mousemove', () => { dragMoved = true; });
-        routeG.addEventListener('mouseup', e => {
-            showRoutePanel(routeIndex);
-        });
-        routeG.addEventListener('touchstart', e => { dragMoved = false; }, { passive: true });
-        routeG.addEventListener('touchmove',  () => { dragMoved = true;  }, { passive: true });
-        routeG.addEventListener('touchend', e => {
-            showRoutePanel(routeIndex);
-        }, { passive: true });
-
-        // Hover highlight
-        routeG.addEventListener('mouseenter', () => {
-            routeG.querySelectorAll('rect[fill]:not([fill="transparent"])').forEach(r => {
-                r.setAttribute('opacity', '1');
-                r.setAttribute('stroke-width', '0.6');
+            // // Invisible hit-area rect covering the whole track (easier to tap)
+            // const midX2 = (from.x + to.x) / 2 + ox;
+            // const midY2 = (from.y + to.y) / 2 + oy;
+            // const hit = document.createElementNS(SVG_NS, 'rect');
+            // hit.setAttribute('x',      midX2 - totalLen / 2 - segGap);
+            // hit.setAttribute('y',      midY2 - (segH * 2));
+            // hit.setAttribute('width',  totalLen + segGap * 2);
+            // hit.setAttribute('height', segH * 4);
+            // hit.setAttribute('fill',   'transparent');
+            // hit.setAttribute('stroke', 'none');
+            // hit.setAttribute('transform', `rotate(${angle},${midX2},${midY2})`);
+            //
+            // Click / tap handler
+            subrouteG.addEventListener('mouseup', e => {
+                showRoutePanel(routeIndex, subrouteIndex);
             });
-        });
-        routeG.addEventListener('mouseleave', () => {
-            routeG.querySelectorAll('rect[fill]:not([fill="transparent"])').forEach(r => {
-                r.setAttribute('opacity', '0.92');
-                r.setAttribute('stroke-width', '0.3');
+            subrouteG.addEventListener('touchend', e => {
+                showRoutePanel(routeIndex, subrouteIndex);
+            }, { passive: true });
+
+            // Hover highlight
+            subrouteG.addEventListener('mouseenter', () => {
+                subrouteG.querySelectorAll('rect[fill]:not([fill="transparent"])').forEach(r => {
+                    r.setAttribute('opacity', '1');
+                    r.setAttribute('stroke-width', '0.6');
+                });
             });
+            subrouteG.addEventListener('mouseleave', () => {
+                subrouteG.querySelectorAll('rect[fill]:not([fill="transparent"])').forEach(r => {
+                    r.setAttribute('opacity', '0.92');
+                    r.setAttribute('stroke-width', '0.3');
+                });
+            });
+            // routeG.appendChild(hit);
         });
+
 
         svgEl.appendChild(routeG);
     });
@@ -437,9 +453,10 @@ document.getElementById('btnReset').addEventListener('click', resetView);
 // ════════════════════════════════════════════════
 async function init() {
 
-    const [svgRes, dataRes] = await Promise.all([
+    const [svgRes, dataRes, stateRes] = await Promise.all([
         fetch("map.svg"),
         fetch("api/map"),
+        fetch("api/state"),
     ]);
     if (!svgRes.ok) {
         alert("Could not load map");
@@ -450,6 +467,11 @@ async function init() {
         alert("Could not load data");
         console.error(dataRes);
         throw new Error("Could not load data");
+    }
+    if (!stateRes.ok) {
+        alert("Could not load state");
+        console.error(stateRes);
+        throw new Error("Could not load state");
     }
 
     const SVG_CONTENT = await svgRes.text();
@@ -484,6 +506,8 @@ async function init() {
     locations = data.locations;
     routes = data.routes;
 
+    state = await stateRes.json();
+
     buildOverlay();
     resetView();
 }
@@ -517,19 +541,18 @@ function showLocationPanel(locIndex) {
     `;
 }
 
-function showRoutePanel(routeIndex) {
+function showRoutePanel(routeIndex, subrouteIndex) {
     const route  = routes[routeIndex];
     const fromLoc = locations[route.from];
     const toLoc   = locations[route.to];
 
     // Colour pips
-    const pipHTML = route.colours.map(c => {
-        const style = colourStyle(c);
-        return `<span class="panel-colour-pip" style="background:${style.fill};border:1px solid ${style.stroke}" title="${c || 'neutral'}"></span>`;
-    }).join('');
+    const c = route.colours[subrouteIndex];
+    const style = colourStyle(c);
+    const pipHTML = `<span class="panel-colour-pip" style="background:${style.fill};border:1px solid ${style.stroke}" title="${c || 'neutral'}"></span>`;
 
     // Claim link — goes to claim.html with route index as query param
-    const claimUrl = `claim.html?route=${routeIndex}`;
+    const claimUrl = `claim.html?route=${routeIndex}&subroute=${subrouteIndex}`;
 
     infoPanelContent.innerHTML = `
         <div class="panel-route-header">

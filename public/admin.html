@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Admin — Game Tracker</title>
+        <link rel="stylesheet" href="style.css" />
+        <style>
+            .admin-section-gap { display: flex; flex-direction: column; gap: 0.6rem; }
+
+            .btn-danger {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 0.8rem 1rem;
+                border: none;
+                border-radius: var(--radius);
+                background: var(--red);
+                color: #fff;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: opacity 0.15s;
+                box-shadow: var(--shadow);
+            }
+            .btn-danger:hover  { opacity: 0.88; }
+            .btn-danger:active { opacity: 0.75; transform: scale(0.99); }
+
+            .btn-secondary {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 0.8rem 1rem;
+                border: 1.5px solid var(--border);
+                border-radius: var(--radius);
+                background: var(--surface);
+                color: var(--text);
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: border-color 0.15s, background 0.15s;
+                box-shadow: var(--shadow);
+            }
+            .btn-secondary:hover  { border-color: #718096; background: var(--neutral-bg); }
+            .btn-secondary:active { opacity: 0.75; transform: scale(0.99); }
+
+            .state-textarea {
+                width: 100%;
+                min-height: 260px;
+                padding: 0.75rem;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                font-size: 12px;
+                font-family: 'SF Mono', 'Fira Mono', 'Consolas', monospace;
+                line-height: 1.6;
+                color: var(--text);
+                background: var(--neutral-bg);
+                resize: vertical;
+                outline: none;
+                transition: border-color 0.15s;
+            }
+            .state-textarea:focus {
+                border-color: #718096;
+                box-shadow: 0 0 0 3px rgba(113,128,150,0.15);
+                background: var(--surface);
+            }
+
+            .status-banner {
+                display: none;
+                font-size: 13px;
+                font-weight: 500;
+                padding: 0.55rem 0.85rem;
+                border-radius: 8px;
+                margin-top: 0.5rem;
+            }
+            .status-banner.success {
+                display: block;
+                background: var(--green-bg);
+                color: var(--green);
+                border: 1px solid var(--green-border);
+            }
+            .status-banner.error {
+                display: block;
+                background: var(--red-bg);
+                color: var(--red);
+                border: 1px solid var(--red-border);
+            }
+
+            .card-header-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 0.6rem;
+            }
+            .btn-refresh {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                padding: 0.3rem 0.65rem;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--surface);
+                color: var(--text-muted);
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: border-color 0.15s, color 0.15s;
+            }
+            .btn-refresh:hover { border-color: #718096; color: var(--text); }
+            .btn-refresh svg { flex-shrink: 0; }
+
+            .confirm-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.35);
+                z-index: 100;
+                align-items: center;
+                justify-content: center;
+            }
+            .confirm-overlay.open { display: flex; }
+            .confirm-box {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 1.5rem 1.75rem;
+                max-width: 340px;
+                width: 90%;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            }
+            .confirm-title {
+                font-size: 16px;
+                font-weight: 700;
+                color: var(--text);
+                margin-bottom: 0.4rem;
+            }
+            .confirm-body {
+                font-size: 14px;
+                color: var(--text-muted);
+                margin-bottom: 1.2rem;
+                line-height: 1.5;
+            }
+            .confirm-actions {
+                display: flex;
+                gap: 0.6rem;
+            }
+            .confirm-actions .btn-danger,
+            .confirm-actions .btn-secondary {
+                width: auto;
+                flex: 1;
+                padding: 0.6rem 0.8rem;
+                font-size: 14px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="container">
+
+            <!-- Back -->
+            <div>
+                <a class="btn-back" href="index.html">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    Back
+                </a>
+            </div>
+
+            <!-- Page title -->
+            <div class="card" style="padding: 0.85rem 1.25rem;">
+                <div class="section-label" style="margin-bottom: 0;">Admin panel</div>
+            </div>
+
+            <!-- Start game -->
+            <div class="card admin-section-gap">
+                <div class="section-label">Game control</div>
+                <button class="btn-primary" id="startBtn" onclick="startGame()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Start game
+                </button>
+                <div class="status-banner" id="startStatus"></div>
+            </div>
+
+            <!-- Reset -->
+            <div class="card admin-section-gap">
+                <div class="section-label">Danger zone</div>
+                <button class="btn-danger" onclick="openConfirm()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                    Reset game
+                </button>
+                <div class="status-banner" id="resetStatus"></div>
+            </div>
+
+            <!-- State viewer / editor -->
+            <div class="card admin-section-gap">
+                <div class="card-header-row">
+                    <div class="section-label" style="margin-bottom: 0;">Game state</div>
+                    <button class="btn-refresh" onclick="fetchState()">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <textarea class="state-textarea" id="stateArea" spellcheck="false" placeholder="Click Refresh to load state…"></textarea>
+                <button class="btn-secondary" onclick="setState()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Apply state
+                </button>
+                <div class="status-banner" id="stateStatus"></div>
+            </div>
+
+        </div>
+
+        <!-- Reset confirm dialog -->
+        <div class="confirm-overlay" id="confirmOverlay" onclick="closeConfirmIfBackdrop(event)">
+            <div class="confirm-box">
+                <div class="confirm-title">Reset game?</div>
+                <div class="confirm-body">This will wipe all progress, routes, and cards. This action cannot be undone.</div>
+                <div class="confirm-actions">
+                    <button class="btn-secondary" onclick="closeConfirm()">Cancel</button>
+                    <button class="btn-danger" onclick="resetGame()">Yes, reset</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function showStatus(id, msg, type) {
+                const el = document.getElementById(id);
+                el.textContent = msg;
+                el.className = `status-banner ${type}`;
+                clearTimeout(el._timer);
+                el._timer = setTimeout(() => { el.className = 'status-banner'; }, 4000);
+            }
+
+            async function startGame() {
+                const btn = document.getElementById('startBtn');
+                btn.disabled = true;
+                btn.textContent = 'Starting…';
+                try {
+                    const res = await fetch('/api/start', { method: 'POST' });
+                    if (res.ok) {
+                        showStatus('startStatus', 'Game started successfully.', 'success');
+                    } else {
+                        const text = await res.text();
+                        showStatus('startStatus', `Error ${res.status}: ${text}`, 'error');
+                    }
+                } catch (e) {
+                    showStatus('startStatus', `Network error: ${e.message}`, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start game`;
+                }
+            }
+
+            function openConfirm()  { document.getElementById('confirmOverlay').classList.add('open'); }
+            function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); }
+            function closeConfirmIfBackdrop(e) { if (e.target === e.currentTarget) closeConfirm(); }
+
+            async function resetGame() {
+                closeConfirm();
+                try {
+                    const res = await fetch('/api/reset', { method: 'POST' });
+                    if (res.ok) {
+                        showStatus('resetStatus', 'Game reset successfully.', 'success');
+                        fetchState();
+                    } else {
+                        const text = await res.text();
+                        showStatus('resetStatus', `Error ${res.status}: ${text}`, 'error');
+                    }
+                } catch (e) {
+                    showStatus('resetStatus', `Network error: ${e.message}`, 'error');
+                }
+            }
+
+            async function fetchState() {
+                const area = document.getElementById('stateArea');
+                area.placeholder = 'Loading…';
+                area.value = '';
+                try {
+                    const res = await fetch('/api/state');
+                    if (res.ok) {
+                        const json = await res.json();
+                        area.value = JSON.stringify(json, null, 2);
+                    } else {
+                        area.placeholder = `Error ${res.status} loading state.`;
+                    }
+                } catch (e) {
+                    area.placeholder = `Network error: ${e.message}`;
+                }
+            }
+
+            async function setState() {
+                const raw = document.getElementById('stateArea').value.trim();
+                if (!raw) {
+                    showStatus('stateStatus', 'State textarea is empty.', 'error');
+                    return;
+                }
+                let parsed;
+                try {
+                    parsed = JSON.parse(raw);
+                } catch (e) {
+                    showStatus('stateStatus', `Invalid JSON: ${e.message}`, 'error');
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/set-state', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(parsed),
+                    });
+                    if (res.ok) {
+                        showStatus('stateStatus', 'State applied successfully.', 'success');
+                    } else {
+                        const text = await res.text();
+                        showStatus('stateStatus', `Error ${res.status}: ${text}`, 'error');
+                    }
+                } catch (e) {
+                    showStatus('stateStatus', `Network error: ${e.message}`, 'error');
+                }
+            }
+
+            // Load state on page open
+            fetchState();
+        </script>
+
+    </body>
+</html>
