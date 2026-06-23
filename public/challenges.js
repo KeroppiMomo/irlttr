@@ -1,8 +1,7 @@
 const CHALLENGE_STATE_KEY = 'challenge_state';
 const TEAM_NAMES_KEY      = 'team_names';
 
-// const currentTeam = localStorage.getItem('my_team') || 0;
-const currentTeam = 1;
+const currentTeam = localStorage.getItem('my_team') || -1;
 if (currentTeam) document.body.className = 'team-' + currentTeam;
 
 let CHALLENGES;

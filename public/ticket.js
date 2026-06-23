@@ -1,46 +1,20 @@
 const TEAM_NAMES_KEY = 'team_names';
-const TICKETS_KEY    = 'tickets';
 
-const currentTeam = localStorage.getItem('my_team') || '';
+const team = localStorage.getItem('my_team') || -1;
 
-function getTeamNames() { try { return JSON.parse(localStorage.getItem(TEAM_NAMES_KEY)) || {}; } catch { return {}; } }
-function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
-function getTeamName(team) { return getTeamNames()[team] || capitalize(team) + ' Team'; }
+if (team) document.body.className = 'team-' + team;
 
-function ticketKey() { return TICKETS_KEY + '_' + (currentTeam || 'none'); }
-function getTickets() { try { return JSON.parse(localStorage.getItem(ticketKey())) || []; } catch { return []; } }
-function saveTickets(t) { localStorage.setItem(ticketKey(), JSON.stringify(t)); }
-
-if (currentTeam) document.body.className = 'team-' + currentTeam;
-
-function toggleDone(id) {
-    const tickets = getTickets();
-    const t = tickets.find(t => t.id === id);
-    if (!t) return;
-    if (t.done) {
-        t.done = false; t.completedAt = null;
-    } else {
-        t.done = true;
-        const now = new Date();
-        t.completedAt = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-    }
-    saveTickets(tickets);
-    renderTickets();
-}
-
-function deleteTicket(id) {
-    const tickets = getTickets().filter(t => t.id !== id);
-    saveTickets(tickets);
-    renderTickets();
-}
+let state;
+let ticketList;
 
 function renderTickets() {
-    const tickets = getTickets();
     const empty = document.getElementById('ticketEmpty');
     const table = document.getElementById('ticketTable');
     const tbody = document.getElementById('ticketBody');
 
-    if (tickets.length === 0) {
+    const keptTickets = state.tickets[team].kept;
+
+    if (keptTickets.length === 0) {
         empty.style.display = '';
         table.style.display = 'none';
         return;
@@ -49,61 +23,92 @@ function renderTickets() {
     table.style.display = '';
     tbody.innerHTML = '';
 
-    tickets.forEach(t => {
+    keptTickets.forEach(t => {
         const tr = document.createElement('tr');
-        if (t.done) tr.classList.add('completed');
+        if (t.completion) tr.classList.add('completed');
 
         const tdStatus = document.createElement('td');
         const iconBtn = document.createElement('button');
-        iconBtn.className = 'status-icon ' + (t.done ? 'done' : 'todo');
-        iconBtn.title = t.done ? 'Mark as incomplete' : 'Mark as complete';
-        iconBtn.setAttribute('aria-label', t.done ? 'Mark as incomplete' : 'Mark as complete');
-        iconBtn.innerHTML = t.done
+        iconBtn.className = 'status-icon ' + (t.completion ? 'done' : 'todo');
+        iconBtn.title = t.completion ? 'Mark as incomplete' : 'Mark as complete';
+        iconBtn.setAttribute('aria-label', t.completion ? 'Mark as incomplete' : 'Mark as complete');
+        iconBtn.innerHTML = t.completion
             ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
             : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
         iconBtn.onclick = () => toggleDone(t.id);
         tdStatus.appendChild(iconBtn);
-        if (t.done && t.completedAt) {
+        if (t.completion) {
+            const d = new Date(t.completion);
+            const text = formatTime(d);
             const timeSpan = document.createElement('span');
             timeSpan.className = 'completion-time';
-            timeSpan.textContent = t.completedAt;
+
+            timeSpan.textContent = text;
             tdStatus.appendChild(timeSpan);
         }
 
         const tdPoints = document.createElement('td');
         const badge = document.createElement('span');
         badge.className = 'points-badge';
-        badge.textContent = t.points;
+        badge.textContent = ticketList[t.id].points;
         tdPoints.appendChild(badge);
 
         const tdFrom = document.createElement('td');
-        tdFrom.textContent = t.from;
+        tdFrom.textContent = ticketList[t.id].from;
 
         const tdArrow = document.createElement('td');
         tdArrow.innerHTML = '<span class="route-arrow">→</span>';
 
         const tdTo = document.createElement('td');
-        tdTo.textContent = t.to;
-
-        const tdDel = document.createElement('td');
-        const delBtn = document.createElement('button');
-        delBtn.style.cssText = 'background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);opacity:0.5;';
-        delBtn.title = 'Remove ticket';
-        delBtn.setAttribute('aria-label', 'Remove ticket');
-        delBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
-        delBtn.onmouseenter = () => delBtn.style.opacity = '1';
-        delBtn.onmouseleave = () => delBtn.style.opacity = '0.5';
-        delBtn.onclick = () => { if (confirm('Remove this ticket?')) deleteTicket(t.id); };
-        tdDel.appendChild(delBtn);
+        tdTo.textContent = ticketList[t.id].to;
 
         tr.appendChild(tdStatus);
         tr.appendChild(tdPoints);
         tr.appendChild(tdFrom);
         tr.appendChild(tdArrow);
         tr.appendChild(tdTo);
-        tr.appendChild(tdDel);
         tbody.appendChild(tr);
     });
 }
 
-renderTickets();
+function setTimeLabel() {
+    const lastKeepTime = state.tickets[team].kept.reduce((max, item) => Math.max(max, item.keptAt), 0);
+    const drawTime = lastKeepTime + 30 * 60 * 1000;
+    const label = document.getElementById("drawTimeLabel");
+    if (!state.game.start) {
+        label.innerHTML = "Pre-start draw";
+    } else if (Date.now() < drawTime && lastKeepTime > state.game.start) {
+        const text = formatTime(new Date(drawTime));
+        label.innerHTML = `You may not draw ticket until ${text}.`;
+    } else {
+        label.innerHTML = `You may draw ticket now.`;
+    }
+}
+
+function formatTime(d) {
+    return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
+}
+
+async function init() {
+    try {
+        const [listRes, stateRes] = await Promise.all([
+            fetch("api/ticket-list"),
+            fetch("api/state"),
+        ]);
+
+        if (!listRes.ok) throw new Error(`Error in ticket-list: ${await listRes.text()}`);
+        if (!stateRes.ok) throw new Error(`Error in state: ${await stateRes.text()}`);
+
+        ticketList = await listRes.json();
+        state = await stateRes.json();
+
+        setTimeLabel();
+
+        renderTickets();
+    } catch (e) {
+        alert(e.message);
+        throw e;
+    }
+}
+
+init();

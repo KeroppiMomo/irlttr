@@ -10,7 +10,7 @@ const defaultState = {
         start: null,
         end: null,
     },
-    teamNames: [ "Team Red", "Team Blue", "Team Green", "Team Yellow" ],
+    teamNames: [ "Team Red", "Team Blue", "Team Yellow", "Team Green" ],
     flop: null,
     cards: Array.from({length: DATA.TEAM_NUM}, () => ({
         ...Object.fromEntries(DATA.TRAIN_COLOURS.map((c) => [c, 0])),
@@ -75,38 +75,41 @@ router.post("/api/ticket-new", (req, res) => {
         return;
     }
 
-    // Compute available tickets:
-    // - any ticket `kept` by any team is taken
-    // - any ticket currently `choosing` by *other* teams is reserved and taken
-    const takenTickets = [];
-    state.tickets.forEach((t, idx) => {
-        if (Array.isArray(t.kept)) takenTickets.push(...t.kept.map(k => k.id));
-        if (Array.isArray(t.choosing) && idx !== team) takenTickets.push(...t.choosing);
-    });
+    const lastKeepTime = state.tickets[team].kept.reduce((max, item) => Math.max(max, item.keptAt), 0);
+    if (Date.now() - lastKeepTime < DATA.TICKET_DRAW_TIME && lastKeepTime >= state.game.start) {
+        res.status(403).send(`Ticket draw too often: last draw at ${lastKeepTime}`);
+        return;
+    }
 
-    let availableTickets = DATA.TICKET_LIST.map((_, i) => i).filter(x => !takenTickets.includes(x));
+    if (state.tickets[team].choosing === null) {
+        const takenTickets = state.tickets.map(({kept, choosing}) =>
+            kept.map(({id}) => id).concat(choosing === null ? [] : choosing)
+        ).flat();
 
-    // If there is no choosing list yet, or it's empty but tickets are available, (re)generate it
-    if (state.tickets[team].choosing === null ||
-        (Array.isArray(state.tickets[team].choosing) && state.tickets[team].choosing.length === 0 && availableTickets.length !== 0)) {
+        let availableTickets =
+            DATA.TICKET_LIST.map((_, i) => i)
+            .filter((x) => !takenTickets.includes(x));
+
+        const drawSize = state.game.start ? DATA.TICKET_DRAW_SIZE : DATA.TICKET_START_DRAW_SIZE;
 
         if (availableTickets.length !== 0) {
-            for (let i = 0; i < Math.min(availableTickets.length, DATA.TICKET_DRAW_SIZE); i++) {
+            for (let i = 0; i < Math.min(availableTickets.length, drawSize); i++) {
                 const j = Math.floor(Math.random() * (availableTickets.length - i)) + i;
                 const x = availableTickets[i];
                 availableTickets[i] = availableTickets[j];
                 availableTickets[j] = x;
             }
 
-            const choosing = availableTickets.slice(0, Math.min(availableTickets.length, DATA.TICKET_DRAW_SIZE));
+            const choosing = availableTickets.slice(0, Math.min(availableTickets.length, drawSize));
             state.tickets[team].choosing = choosing;
-        } else {
-            // explicitly set empty array so clients receive [] instead of null
-            state.tickets[team].choosing = [];
         }
     }
 
-    res.send(JSON.stringify(state.tickets[team].choosing));
+    const minKept = state.game.start ? DATA.TICKET_DRAW_MIN_KEPT : DATA.TICKET_START_DRAW_MIN_KEPT;
+    res.send(JSON.stringify({
+        choosing: state.tickets[team].choosing,
+        minKept,
+    }));
 });
 
 // Body format:
@@ -134,11 +137,6 @@ router.post("/api/ticket-choose", (req, res) => {
         return;
     }
 
-    if (chosen.length === 0) {
-        res.status(403).send("Must choose at least one ticket");
-        return;
-    }
-
     for (const ticket of chosen) {
         if (!state.tickets[team].choosing.includes(ticket)) {
             res.status(403).send(`Ticket ${ticket} is not an allowed choice: ${state.tickets[team].choosing}`);
@@ -146,10 +144,23 @@ router.post("/api/ticket-choose", (req, res) => {
         }
     }
 
+    const lastKeepTime = state.tickets[team].kept.reduce((max, item) => Math.max(max, item.keptAt), 0);
+    if (Date.now() - lastKeepTime < DATA.TICKET_DRAW_TIME && lastKeepTime >= state.game.start) {
+        res.status(403).send(`Ticket draw too often: last draw at ${lastKeepTime}`);
+        return;
+    }
+
+    const minKept = state.game.start ? DATA.TICKET_DRAW_MIN_KEPT : DATA.TICKET_START_DRAW_MIN_KEPT;
+    if (chosen.length < minKept) {
+        res.status(403).send(`Too few ticket chosen: must keep ${minKept}`);
+        return;
+    }
+
     state.tickets[team].choosing = null;
     for (const ticket of chosen) {
         state.tickets[team].kept.push({
             id: ticket,
+            keptAt: Date.now(),
             completion: null,
         });
     }

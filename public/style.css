@@ -31,10 +31,10 @@ body {
 }
 
 /* ── Team colour theming ── */
-body.team-red    { --accent: var(--red);    --accent-bg: var(--red-bg);    --accent-border: var(--red-border); }
-body.team-blue   { --accent: var(--blue);   --accent-bg: var(--blue-bg);   --accent-border: var(--blue-border); }
-body.team-yellow { --accent: var(--yellow); --accent-bg: var(--yellow-bg); --accent-border: var(--yellow-border); }
-body.team-green  { --accent: var(--green);  --accent-bg: var(--green-bg);  --accent-border: var(--green-border); }
+body.team-0 { --accent: var(--red);    --accent-bg: var(--red-bg);    --accent-border: var(--red-border); }
+body.team-1 { --accent: var(--blue);   --accent-bg: var(--blue-bg);   --accent-border: var(--blue-border); }
+body.team-2 { --accent: var(--yellow); --accent-bg: var(--yellow-bg); --accent-border: var(--yellow-border); }
+body.team-3 { --accent: var(--green);  --accent-bg: var(--green-bg);  --accent-border: var(--green-border); }
 
 .container { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
 

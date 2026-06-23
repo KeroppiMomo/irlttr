@@ -1,73 +1,49 @@
-const TICKETS_KEY    = 'tickets';
-const TEAM_NAMES_KEY = 'team_names';
-
-const currentTeam = localStorage.getItem('my_team') || '';
-if (currentTeam) document.body.className = 'team-' + currentTeam;
+const team = localStorage.getItem('my_team') || '';
+if (team) document.body.className = 'team-' + team;
 
 // Sample ticket pool — replace or extend with your real locations and points
-const TICKET_POOL = [
-    { points: 4,  from: 'Central Station',  to: 'Old Town Square'    },
-    { points: 6,  from: 'Harbour Bridge',   to: 'Botanical Gardens'  },
-    { points: 8,  from: 'North Gate',       to: 'Riverside Market'   },
-    { points: 5,  from: 'Museum Hill',      to: 'East Docks'         },
-    { points: 10, from: 'Castle Ruins',     to: 'Southern Ferry'     },
-    { points: 3,  from: 'City Library',     to: 'Bell Tower'         },
-    { points: 7,  from: 'West Park',        to: 'Underground Vault'  },
-    { points: 9,  from: 'Grand Bazaar',     to: 'Lighthouse Point'   },
-    { points: 5,  from: 'Clocktower Plaza', to: 'Royal Gardens'      },
-    { points: 6,  from: 'Merchant Quarter', to: 'Sea Cliff Lookout'  },
-    { points: 8,  from: 'Iron Bridge',      to: 'Mountain Pass'      },
-    { points: 4,  from: 'Silk Road Inn',    to: 'Forge District'     },
-];
+let ticketList;
+let minKept;
 
 // Draw tickets by asking the API for choices; fall back to local pool
-async function drawTickets(pool, count) {
+async function drawTickets() {
     try {
-        // Determine numeric team id (stored as string in localStorage)
-        const rawTeam = localStorage.getItem('my_team');
-        const teamName = rawTeam || '';
-        let teamId = null;
-        if (rawTeam) {
-            if (/^\d+$/.test(rawTeam)) {
-                teamId = parseInt(rawTeam, 10);
-            } else {
-                // accept variants like "Team Red", "red", "Red"
-                const key = String(rawTeam).toLowerCase().trim().replace(/^team\s+/, '');
-                const map = { red: 0, blue: 1, green: 2, yellow: 3 };
-                if (Object.prototype.hasOwnProperty.call(map, key)) teamId = map[key];
-            }
-        }
-
         // If no valid team id, skip server call and fall back
-        if (teamId === null || Number.isNaN(teamId)) throw new Error('no-valid-team');
+        if (team === null || Number.isNaN(team)) {
+            alert("No team selected");
+            throw new Error('no-valid-team');
+        }
 
         // Get full ticket list from server
         const listResp = await fetch('/api/ticket-list');
-        if (!listResp.ok) throw new Error('ticket-list fetch failed');
-        const ticketList = await listResp.json();
+        if (!listResp.ok) throw new Error(`ticket-list fetch failed: ${await listResp.text()}`);
+        ticketList = await listResp.json();
 
         // Request server to prepare a draw for this team
         const newResp = await fetch('/api/ticket-new', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ team: teamId }),
+            body: JSON.stringify({ team }),
         });
 
-        if (!newResp.ok) throw new Error('ticket-new fetch failed');
-        const choosing = await newResp.json();
+        if (!newResp.ok) throw new Error(`ticket-new fetch failed: ${await newResp.text()}`);
+        const res = await newResp.json();
+        const choosing = res.choosing;
+        minKept = res.minKept;
 
-        // `choosing` is an array of ticket indices — map to full ticket objects
-        if (Array.isArray(choosing) && choosing.length > 0) {
-            return choosing.slice(0, count).map(i => ticketList[i]);
+        if (choosing === null) {
+            alert("Oh no, all tickets have been taken!");
+            location.href = "ticket.html";
+            return;
         }
-    } catch (e) {
-        // silent fallthrough to local draw on any error
-        console.warn('new-ticket: drawTickets error', e && e.message ? e.message : e);
-    }
 
-    // // Fallback: local random draw
-    // const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    // return shuffled.slice(0, count);
+        document.getElementById("minKeptLabel").innerHTML = minKept;
+
+        return choosing;
+    } catch (e) {
+        alert(e.message);
+        throw e;
+    }
 }
 
 let drawn = [];
@@ -94,12 +70,12 @@ function renderDraw() {
         const tdPoints = document.createElement('td');
         const badge = document.createElement('span');
         badge.className = 'points-badge';
-        badge.textContent = t.points;
+        badge.textContent = ticketList[t].points;
         tdPoints.appendChild(badge);
 
         // From
         const tdFrom = document.createElement('td');
-        tdFrom.textContent = t.from;
+        tdFrom.textContent = ticketList[t].from;
 
         // Arrow
         const tdArrow = document.createElement('td');
@@ -107,7 +83,7 @@ function renderDraw() {
 
         // To
         const tdTo = document.createElement('td');
-        tdTo.textContent = t.to;
+        tdTo.textContent = ticketList[t].to;
 
         tr.appendChild(tdCheck);
         tr.appendChild(tdPoints);
@@ -133,11 +109,7 @@ function getKept() {
 }
 
 // Storage helpers
-function ticketKey() { return TICKETS_KEY + '_' + (currentTeam || 'none'); }
-function getTickets() { try { return JSON.parse(localStorage.getItem(ticketKey())) || []; } catch { return []; } }
-function saveTickets(t) { localStorage.setItem(ticketKey(), JSON.stringify(t)); }
-
-function confirmTickets() {
+async function confirmTickets() {
     const kept = getKept();
     const warning = document.getElementById('keepWarning');
 
@@ -147,22 +119,29 @@ function confirmTickets() {
         return;
     }
 
-    const existing = getTickets();
-    const newTickets = kept.map(t => ({
-        id:          Date.now() + '-' + Math.random().toString(36).slice(2),
-        points:      t.points,
-        from:        t.from,
-        to:          t.to,
-        done:        false,
-        completedAt: null,
-    }));
+    try {
+        const res = await fetch('/api/ticket-choose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                team,
+                chosen: kept,
+            }),
+        });
 
-    saveTickets([...existing, ...newTickets]);
-    window.location.href = 'ticket.html';
+        if (!res.ok) {
+            throw new Error(`Error from ticket-choose: ${await res.text()}`);
+        }
+
+        location.href = "ticket.html";
+    } catch (e) {
+        alert(e.message);
+        throw e;
+    }
 }
 
 // Initialize draw by fetching from API (falls back to local pool)
 (async function initDraw() {
-    drawn = await drawTickets(TICKET_POOL, 3);
+    drawn = await drawTickets();
     renderDraw();
 })();
