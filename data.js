@@ -8,6 +8,7 @@ module.exports.TRAIN_COLOURS = [ "pink", "red", "orange", "yellow", "green", "bl
 module.exports.COLOURED_TRAIN_NUM = 12;
 module.exports.TRAIN_LOCOMOTIVE = "locomotive";
 module.exports.LOCOMOTIVE_NUM = 14;
+module.exports.FREE_DRAW_TIME = 20 * 60 * 1000; // in ms
 
 module.exports.TICKET_START_DRAW_SIZE = 5;
 module.exports.TICKET_START_DRAW_MIN_KEPT = 2;

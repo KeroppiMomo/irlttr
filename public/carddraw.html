@@ -22,18 +22,18 @@
             <!-- Hand summary -->
             <div class="card">
                 <div class="section-label">Current cards</div>
-                <div class="hand-grid" id="handGrid"></div>
+                <div class="hand-grid" id="handGrid">Loading...</div>
             </div>
 
             <!-- Draw info -->
             <div class="card draw-info-card">
                 <div class="draw-info-row">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="14" height="18" rx="2"/><rect x="8" y="2" width="14" height="18" rx="2"/></svg>
-                    <span id="drawsAvailable"><strong>3</strong> available card draws</span>
+                    <span><strong id="drawsAvailableLabel">—</strong> available card draws</span>
                 </div>
                 <div class="draw-info-row muted">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span id="nextDrawTimer">— until next free draw</span>
+                    <span><strong id="nextDrawTimerLabel">—</strong> until next free draw</span>
                 </div>
             </div>
 

@@ -54,4 +54,6 @@ function generateFlop(state) {
 
 module.exports = {
     generateFlop,
+    sampleFromDeck,
+    flopTooManyLocomotives,
 };

@@ -1,4 +1,4 @@
-const { generateFlop } = require("./deck-shuffler.js");
+const { generateFlop, sampleFromDeck, flopTooManyLocomotives } = require("./deck-shuffler.js");
 const DATA = require("./data.js");
 const express = require("express");
 const router = express.Router();
@@ -11,6 +11,7 @@ const defaultState = {
         end: null,
     },
     teamNames: [ "Team Red", "Team Blue", "Team Yellow", "Team Green" ],
+    halfDraws: [ 0, 0, 0, 0 ],
     flop: null,
     cards: Array.from({length: DATA.TEAM_NUM}, () => ({
         ...Object.fromEntries(DATA.TRAIN_COLOURS.map((c) => [c, 0])),
@@ -234,6 +235,92 @@ router.post("/api/challenge-end", (req, res) => {
     curChall.result = result;
 
     res.status(200).send();
+});
+
+function availHalfDraw(team) {
+    let ans = 0;
+    if (state.game.start) {
+        for (let time = state.game.start; time < Date.now(); time += DATA.FREE_DRAW_TIME) {
+            ans += 2 * !state.challenges[team].some(({start, end}) => (start < time && time < end));
+        }
+    }
+
+    return ans - state.halfDraws[team];
+}
+
+// Format:
+// { team: int, flopIndex: null or int, expectedColour: null or string }
+router.post("/api/card-draw", (req, res) => {
+    if (req.body === undefined) {
+        res.status(400).send("JSON request body not found");
+        return;
+    }
+
+    const team = parseInt(req.body.team);
+    if (!(0 <= team && team < DATA.TEAM_NUM)) {
+        res.status(400).send(`Invalid parameter team ${req.body.team}`);
+        return;
+    }
+
+    const flopIndex = req.body.flopIndex;
+    if (!(flopIndex === null || (0 <= flopIndex && flopIndex < DATA.FLOP_SIZE))) {
+        res.status(400).send(`Invalid parameter flopIndex ${req.body.flopIndex}`);
+        return;
+    }
+
+    if (state.game.start === null) {
+        res.status(403).send("Card draw not allowed before game starts");
+        return;
+    }
+
+    if (availHalfDraw(team) <= 0) {
+        res.status(403).send("No available card draw");
+        return;
+    }
+
+    const expectedColour = req.body.expectedColour;
+
+    if (flopIndex === null) {
+        // Blind draw
+        const colour = sampleFromDeck(state);
+        if (colour === null) {
+            res.status(403).send(`Oh no, deck is empty`);
+            return;
+        }
+        state.cards[team][colour]++;
+
+        res.send(colour);
+        state.halfDraws[team]++;
+    } else {
+        // Take from flop
+        const colour = state.flop[flopIndex];
+        if (colour === null) {
+            res.status(403).send(`No card at index ${flopIndex} in flop`);
+            return
+        }
+        if (expectedColour !== null) {
+            if (colour !== expectedColour) {
+                res.status(403).send("Client flop does not match server flop. Refresh to update.");
+                return;
+            }
+        }
+
+        state.cards[team][colour]++;
+        state.flop[flopIndex] = null;
+        state.flop[flopIndex] = sampleFromDeck(state); // possibly null
+
+        if (flopTooManyLocomotives(state)) {
+            generateFlop(state);
+        }
+
+        res.send(colour);
+        
+        if (colour === DATA.TRAIN_LOCOMOTIVE) {
+            state.halfDraws[team] += 2;
+        } else {
+            state.halfDraws[team] += 1;
+        }
+    }
 });
 
 module.exports = router;

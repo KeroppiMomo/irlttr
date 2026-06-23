@@ -2,11 +2,13 @@ const TEAM_NAMES_KEY = 'team_names';
 const FLOP_KEY       = 'shared_flop';
 const HAND_KEY       = 'hand';
 
-const currentTeam = localStorage.getItem('my_team') || '';
-if (currentTeam) document.body.className = 'team-' + currentTeam;
+const team = localStorage.getItem('my_team') || '';
+if (team) document.body.className = 'team-' + team;
+
+let state;
 
 // ── Card definitions ──
-const COLOURS = ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'white', 'black', 'wild'];
+const COLOURS = ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'white', 'black', 'locomotive'];
 
 const COLOUR_META = {
     pink:   { label: 'Pink',   cssClass: 'card-pink'   },
@@ -17,60 +19,37 @@ const COLOUR_META = {
     blue:   { label: 'Blue',   cssClass: 'card-blue'   },
     white:  { label: 'White',  cssClass: 'card-white'  },
     black:  { label: 'Black',  cssClass: 'card-black'  },
-    wild:   { label: 'Wild',   cssClass: 'card-wild'   },
+    locomotive:   { label: 'Wild',   cssClass: 'card-wild'   },
 };
 
-// Deck: 12 of each colour + 14 wilds (typical Ticket to Ride distribution)
-function buildDeck() {
-    const deck = [];
-    COLOURS.forEach(c => {
-        const count = c === 'wild' ? 14 : 12;
-        for (let i = 0; i < count; i++) deck.push(c);
-    });
-    return deck;
-}
+const FREE_DRAW_TIME = 20 * 60 * 1000;
 
-function randomCard() {
-    const deck = buildDeck();
-    return deck[Math.floor(Math.random() * deck.length)];
-}
+function availHalfDraw(team) {
+    let ans = 0;
+    if (state.game.start) {
+        for (let time = state.game.start; time < Date.now(); time += FREE_DRAW_TIME) {
+            ans += 2 * !state.challenges[team].some(({start, end}) => (start < time && time < end));
+        }
+    }
 
-// ── Storage helpers ──
-function handKey() { return HAND_KEY + '_' + (currentTeam || 'none'); }
-
-function getHand() {
-    try { return JSON.parse(localStorage.getItem(handKey())) || {}; } catch { return {}; }
+    return ans - state.halfDraws[team];
 }
-function saveHand(h) { localStorage.setItem(handKey(), JSON.stringify(h)); }
-
-function getFlop() {
-    try {
-        const f = JSON.parse(localStorage.getItem(FLOP_KEY));
-        if (Array.isArray(f) && f.length === 5) return f;
-    } catch {}
-    // Initialise a fresh flop
-    const fresh = Array.from({ length: 5 }, () => randomCard());
-    localStorage.setItem(FLOP_KEY, JSON.stringify(fresh));
-    return fresh;
-}
-function saveFlop(f) { localStorage.setItem(FLOP_KEY, JSON.stringify(f)); }
 
 // ── Hand rendering ──
 function renderHand() {
-    const hand = getHand();
     const grid = document.getElementById('handGrid');
     grid.innerHTML = '';
 
     COLOURS.forEach(c => {
-        const count = hand[c] || 0;
+        const count = state.cards[team][c];
         const meta  = COLOUR_META[c];
 
         const entry = document.createElement('div');
         entry.className = 'hand-entry';
 
         const pip = document.createElement('div');
-        pip.className = 'hand-pip' + (c === 'wild' ? ' wild' : '');
-        if (c !== 'wild') pip.style.background = pipColour(c);
+        pip.className = 'hand-pip' + (c === 'locomotive' ? ' wild' : '');
+        if (c !== 'locomotive') pip.style.background = pipColour(c);
 
         const label = document.createElement('span');
         label.className = 'hand-label';
@@ -136,61 +115,84 @@ function wildTrainSVG() {
 
 // ── Flop rendering ──
 function renderFlop() {
-    const flop   = getFlop();
     const flopEl = document.getElementById('flop');
     flopEl.innerHTML = '';
 
-    flop.forEach((colour, idx) => {
-        const meta = COLOUR_META[colour];
+    if (!state.flop) {
+        flopEl.innerHTML = "Not yet generated";
+        return;
+    }
+    state.flop.forEach((colour, idx) => {
         const card = document.createElement('div');
-        card.className = 'train-card ' + meta.cssClass;
         card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', 'Take ' + meta.label + ' card');
-        card.innerHTML = (colour === 'wild' ? wildTrainSVG() : trainSVG(colour))
-            + `<span class="card-label">${meta.label}</span>`;
 
-        card.addEventListener('click', () => takeCard(idx, colour));
+        if (colour !== null) {
+            const meta = COLOUR_META[colour];
+            card.className = 'train-card ' + meta.cssClass;
+            card.setAttribute('aria-label', 'Take ' + meta.label + ' card');
+            card.innerHTML = (colour === 'locomotive' ? wildTrainSVG() : trainSVG(colour))
+                + `<span class="card-label">${meta.label}</span>`;
+
+            card.addEventListener('click', () => takeCard(idx));
+        } else {
+            card.className = 'train-card-null';
+            card.innerHTML = 'X';
+        }
+
         flopEl.appendChild(card);
     });
 }
 
 // ── Take a card from the flop ──
-function takeCard(idx, colour) {
-    if (!currentTeam) { showToast('Select a team first'); return; }
+async function takeCard(idx) {
+    try {
+        const colour = state.flop[idx];
 
-    // Animate
-    const cardEls = document.querySelectorAll('#flop .train-card');
-    if (cardEls[idx]) {
-        cardEls[idx].classList.add('taking');
-        cardEls[idx].addEventListener('animationend', () => cardEls[idx].classList.remove('taking'), { once: true });
+        const res = await fetch('/api/card-draw', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                team,
+                flopIndex: idx,
+                expectedColour: colour,
+            }),
+        });
+
+        if (!res.ok)
+            throw new Error(`Error in card-draw: ${await res.text()}`);
+
+        showToast('Took a ' + await res.text() + ' card');
+
+        await update();
+    } catch (e) {
+        alert(e.message);
+        throw e;
     }
-
-    // Add to hand
-    const hand = getHand();
-    hand[colour] = (hand[colour] || 0) + 1;
-    saveHand(hand);
-
-    // Replace card in flop with a new random one
-    const flop = getFlop();
-    flop[idx] = randomCard();
-    saveFlop(flop);
-
-    renderHand();
-    renderFlop();
-    showToast('Took 1 ' + COLOUR_META[colour].label + ' card');
 }
 
 // ── Blind draw ──
-function blindDraw() {
-    if (!currentTeam) { showToast('Select a team first'); return; }
+async function blindDraw() {
+    try {
+        const res = await fetch('/api/card-draw', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                team,
+                flopIndex: null,
+                expectedColour: null,
+            }),
+        });
 
-    const colour = randomCard();
-    const hand   = getHand();
-    hand[colour] = (hand[colour] || 0) + 1;
-    saveHand(hand);
+        if (!res.ok)
+            throw new Error(`Error in card-draw: ${await res.text()}`);
 
-    renderHand();
-    showToast('Drew 1 ' + COLOUR_META[colour].label + ' card');
+        showToast('Drew a ' + await res.text() + ' card');
+
+        await update();
+    } catch (e) {
+        alert(e.message);
+        throw e;
+    }
 }
 
 // ── Toast ──
@@ -208,9 +210,40 @@ function showToast(msg) {
     toastTimer = setTimeout(() => toast.classList.add('hide'), 2000);
 }
 
-// ── Poll for shared flop updates every 4s ──
-setInterval(() => { renderFlop(); }, 4000);
+function setAvailLabel() {
+    document.getElementById("drawsAvailableLabel").innerHTML = availHalfDraw(team)/2;
+}
 
-// ── Init ──
-renderHand();
-renderFlop();
+function setNextFreeLabel() {
+    if (state && state.game.start) {
+        const timeSinceStart = Date.now() - state.game.start;
+        const remainingTime = FREE_DRAW_TIME - (timeSinceStart % FREE_DRAW_TIME);
+        const seconds = Math.floor((remainingTime / 1000) % 60);
+        const minutes = Math.floor(remainingTime / 60 / 1000);
+        const text = ("0" + minutes).slice(-2) + ":" + ("0" + seconds).slice(-2);
+        document.getElementById("nextDrawTimerLabel").innerHTML = text;
+    }
+}
+
+async function update() {
+    try {
+        const res = await fetch("/api/state");
+        if (!res.ok) {
+            throw new Error(`Error fetching state: ${await res.text()}`);
+        }
+        state = await res.json();
+
+        renderHand();
+        setAvailLabel();
+        renderFlop();
+        setNextFreeLabel();
+    } catch (e) {
+        alert(e.message);
+        throw e;
+    }
+}
+
+update();
+setInterval(update, 2000);
+
+setInterval(setNextFreeLabel, 1000);
